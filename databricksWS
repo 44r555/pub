@@ -9,8 +9,8 @@
         "description": "Location for all resources."
       }
     },
-    "time": {
-      "defaultValue": "[utcNow('dd-MM-yy')]",
+    "date": {
+      "defaultValue": "[utcNow('dd-MM-yyyy')]",
       "type": "string"
     },
     "workspaceName": {
@@ -45,8 +45,7 @@
       "tags": {
         "Owner": "Abhishek Modi",
         "Purpose": "Semantic Data Lake",
-        "CreatedOn": "",
-        "": ""
+        "CreatedOn": "[parameters('location')]"
       },
       "sku": {
         "name": "[parameters('pricingTier')]"
