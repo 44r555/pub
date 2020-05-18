@@ -1,64 +1,71 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-        "location": {
-            "defaultValue": "[resourceGroup().location]",
-            "type": "string",
-            "metadata": {
-                "description": "Location for all resources."
-            }
-        },
-        "workspaceName": {
-            "defaultValue": "semanticdatalakeWS",
-            "type": "String",
-            "metadata": {
-                "description": "The name of the Azure Databricks workspace to create."
-            }
-        },
-        "pricingTier": {
-            "defaultValue": "trial",
-            "allowedValues": [
-                "trial",
-                "standard",
-                "premium"
-            ],
-            "type": "string",
-            "metadata": {
-                "description": "The pricing tier of Databricks Workspace."
-            }
-        }
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "defaultValue": "[resourceGroup().location]",
+      "type": "string",
+      "metadata": {
+        "description": "Location for all resources."
+      }
     },
-    "variables": {
-        "managedResourceGroupId": "[concat(subscription().id, '/resourceGroups/databricks-rg-', parameters('workspaceName'), '-', uniqueString(parameters('workspaceName'), resourceGroup().id))]"
+    "time": {
+      "defaultValue": "[utcNow('dd-MM-yy')]",
+      "type": "string"
     },
-    "resources": [
-        {
-            "type": "Microsoft.Databricks/workspaces",
-            "apiVersion": "[providers('Microsoft.Databricks','workspaces').apiVersions[0]]",
-            "name": "[parameters('workspaceName')]",
-            "location": "[parameters('location')]",
-            "tags": {
-                "Owner": "Abhishek Modi"
-            },
-            "sku": {
-                "name": "[parameters('pricingTier')]"
-            },
-            "comments": "The managed resource group specified will be locked after deployment.",
-            "properties": {
-                "ManagedResourceGroupId": "[variables('managedResourceGroupId')]",
-                "parameters": {}
-            }
-        }
-    ],
-    "outputs": {
-        "wizard_url": {
-            "type": "string",
-            "value": "[Concat('https://',parameters('location'),'.azurewebsites.net')]"
-        },
-        "workspace": {
-            "type": "object",
-            "value": "[reference(resourceId('Microsoft.Databricks/workspaces', parameters('workspaceName')))]"
-        }
+    "workspaceName": {
+      "defaultValue": "semanticdatalakeWS",
+      "type": "String",
+      "metadata": {
+        "description": "The name of the Azure Databricks workspace to create."
+      }
+    },
+    "pricingTier": {
+      "defaultValue": "trial",
+      "allowedValues": [
+        "trial",
+        "standard",
+        "premium"
+      ],
+      "type": "string",
+      "metadata": {
+        "description": "The pricing tier of Databricks Workspace."
+      }
     }
+  },
+  "variables": {
+    "managedResourceGroupId": "[concat(subscription().id, '/resourceGroups/databricks-rg-', parameters('workspaceName'), '-', uniqueString(parameters('workspaceName'), resourceGroup().id))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Databricks/workspaces",
+      "apiVersion": "[providers('Microsoft.Databricks','workspaces').apiVersions[0]]",
+      "name": "[parameters('workspaceName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "Owner": "Abhishek Modi",
+        "Purpose": "Semantic Data Lake",
+        "CreatedOn": "",
+        "": ""
+      },
+      "sku": {
+        "name": "[parameters('pricingTier')]"
+      },
+      "comments": "The managed resource group specified will be locked after deployment.",
+      "properties": {
+        "ManagedResourceGroupId": "[variables('managedResourceGroupId')]",
+        "parameters": {}
+      }
+    }
+  ],
+  "outputs": {
+    "wizard_url": {
+      "type": "string",
+      "value": "[Concat('https://',parameters('location'),'.azurewebsites.net')]"
+    },
+    "workspace": {
+      "type": "object",
+      "value": "[reference(resourceId('Microsoft.Databricks/workspaces', parameters('workspaceName')))]"
+    }
+  }
 }
