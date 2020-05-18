@@ -45,7 +45,7 @@
       "tags": {
         "Owner": "Abhishek Modi",
         "Purpose": "Semantic Data Lake",
-        "CreatedOn": "[parameters('location')]"
+        "CreatedOn": "[parameters('date')]"
       },
       "sku": {
         "name": "[parameters('pricingTier')]"
