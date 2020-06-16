@@ -262,7 +262,7 @@
       },
       "capture_StorageAccount_Key": {
         "type": "string",
-        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('clientstorageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
       },
       "capture_StorageAccount": {
         "type": "string",
