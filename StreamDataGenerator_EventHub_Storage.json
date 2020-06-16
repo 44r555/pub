@@ -60,7 +60,7 @@
     },
     "variables": {
         "tags": {
-            "Owner": "Abhishek.Modi",
+            "Owner": "Abhishek Modi",
             "Purpose": "Stream Data Generator",
             "Expires": "[parameters('date')]"
         }
