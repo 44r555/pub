@@ -266,11 +266,11 @@
       },
       "capture_StorageAccount": {
         "type": "string",
-        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+        "value": "[parameters('capture_storageAccount_name')]"
       },
       "capture_blob_container": {
         "type": "string",
-        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('capture_blob_container')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+        "value": "[parameters('capture_blob_container')]"
       }
     }
   }
