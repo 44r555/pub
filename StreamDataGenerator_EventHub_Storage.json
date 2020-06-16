@@ -203,7 +203,7 @@
                         "name": "EventHubArchive.AzureBlockBlob",
                         "properties": {
                             "storageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]",
-                            "blobContainer": "eventhub",
+                            "blobContainer": "[parameters('capture_blob_container')]",
                             "archiveNameFormat": "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}"
                         }
                     },
