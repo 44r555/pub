@@ -1,0 +1,276 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+          "defaultValue": "[resourceGroup().location]",
+          "type": "string",
+          "metadata": {
+            "description": "Location for all resources."
+          }
+        },
+        "eventhub_namespace": {
+            "defaultValue": "datageneratorns",
+            "type": "String"
+        },
+        "eventHubSku": {
+          "type": "string",
+          "allowedValues": ["Basic", "Standard"],
+          "defaultValue": "Standard",
+          "metadata": {
+            "description": "Specifies the messaging tier for service Bus namespace."
+          }
+        },
+        "skuCapacity": {
+          "defaultValue": 1,
+          "type": "int",
+          "allowedValues": [
+            1,
+            2,
+            4
+          ],
+          "metadata": {
+            "description": "MessagingUnits for premium namespace"
+          }
+        },
+        "eventhub_name": {
+            "defaultValue": "datageneratoreh",
+            "type": "String"
+        },
+        "partitionCount": {
+            "defaultValue": 2,
+            "type": "int"
+        },
+        "consumer_group": {
+            "defaultValue": "datageneratorcg",
+            "type": "String"
+        },
+        "capture_storageAccount_name": {
+            "defaultValue": "datageneratorsa",
+            "type": "String"
+        },
+        "capture_blob_container": {
+            "defaultValue": "datageneratorcn",
+            "type": "String"
+        },
+        "date": {
+          "defaultValue": "[utcNow('dd-MM-yyyy')]",
+          "type": "string"
+        }
+    },
+    "variables": {
+        "tags": {
+            "Owner": "Abhishek Modi",
+            "Purpose": "Stream Data Generator",
+            "Expires": "[parameters('date')]"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.EventHub/namespaces",
+            "apiVersion": "2018-01-01-preview",
+            "name": "[parameters('eventhub_namespace')]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "sku": {
+                "name": "[parameters('eventHubSku')]",
+                "tier": "[parameters('eventHubSku')]",
+                "capacity": "[parameters('skuCapacity')]"
+            },
+            "properties": {
+                "zoneRedundant": false,
+                "isAutoInflateEnabled": false,
+                "maximumThroughputUnits": 0,
+                "kafkaEnabled": true
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "name": "[parameters('capture_storageAccount_name')]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "largeFileSharesState": "Disabled",
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            }
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
+            "apiVersion": "2017-04-01",
+            "name": "[concat(parameters('eventhub_namespace'), '/RootManageSharedAccessKey')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]"
+            ],
+            "properties": {
+                "rights": ["Listen", "Manage", "Send"]
+            }
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/networkRuleSets",
+            "apiVersion": "2018-01-01-preview",
+            "name": "[concat(parameters('eventhub_namespace'), '/default')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]"
+            ],
+            "properties": {
+                "defaultAction": "Deny",
+                "virtualNetworkRules": [],
+                "ipRules": []
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('capture_storageAccount_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                },
+                "deleteRetentionPolicy": {
+                    "enabled": false
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('capture_storageAccount_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/eventhubs",
+            "apiVersion": "2017-04-01",
+            "name": "[concat(parameters('eventhub_namespace'), '/',parameters('eventhub_name'))]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]"
+            ],
+            "properties": {
+                "messageRetentionInDays": 1,
+                "partitionCount": "[parameters('partitionCount')]",
+                "status": "Active",
+                "captureDescription": {
+                    "enabled": true,
+                    "encoding": "Avro",
+                    "destination": {
+                        "name": "EventHubArchive.AzureBlockBlob",
+                        "properties": {
+                            "storageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]",
+                            "blobContainer": "eventhub",
+                            "archiveNameFormat": "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}"
+                        }
+                    },
+                    "intervalInSeconds": 300,
+                    "sizeLimitInBytes": 314572800
+                }
+            }
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
+            "apiVersion": "2017-04-01",
+            "name": "[concat(parameters('eventhub_namespace'), '/',parameters('eventhub_name'),'/$Default')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('eventhub_namespace'), parameters('eventhub_name'))]",
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]"
+            ],
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
+            "apiVersion": "2017-04-01",
+            "name": "[concat(parameters('eventhub_namespace'), '/',parameters('eventhub_name'),'/',parameters('consumer_group'))]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('eventhub_namespace'), parameters('eventhub_name'))]",
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]"
+            ],
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('capture_storageAccount_name'), '/default/', parameters('capture_blob_container'))]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('capture_storageAccount_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]"
+            ],
+            "properties": {
+                "publicAccess": "Blob"
+            }
+        }
+    ],
+    "outputs": {
+      "eventhub_namespace": {
+        "type": "string",
+        "value": "[parameters('eventhub_namespace')]"
+      },
+      "eventhub_sas_key": {
+        "type": "string",
+        "value": "[listkeys(resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('eventhub_namespace'), 'RootManageSharedAccessKey'), '2017-04-01').primaryKey]"
+      },
+      "eventhub_name": {
+        "type": "string",
+        "value": "[parameters('eventhub_name')]"
+      },
+      "capture_StorageAccount_Key": {
+        "type": "string",
+        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('clientstorageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+      },
+      "capture_StorageAccount": {
+        "type": "string",
+        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+      },
+      "capture_blob_container": {
+        "type": "string",
+        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('capture_blob_container')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+      }
+    }
+  }
