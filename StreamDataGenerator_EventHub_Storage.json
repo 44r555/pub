@@ -50,7 +50,7 @@
             "type": "String"
         },
         "capture_blob_container": {
-            "defaultValue": "datageneratorbcn",
+            "defaultValue": "datageneratorbc",
             "type": "String"
         },
         "date": {
