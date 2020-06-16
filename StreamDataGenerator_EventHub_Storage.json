@@ -16,7 +16,7 @@
         "eventHubSku": {
           "type": "string",
           "allowedValues": ["Basic", "Standard"],
-          "defaultValue": "Basic",
+          "defaultValue": "Standard",
           "metadata": {
             "description": "Specifies the messaging tier for service Bus namespace."
           }
