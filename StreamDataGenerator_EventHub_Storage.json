@@ -10,11 +10,31 @@
           }
         },
         "eventhub_namespace": {
-            "defaultValue": "datageneratoreh",
+            "defaultValue": "datageneratorns",
             "type": "String"
         },
+        "eventHubSku": {
+          "type": "string",
+          "allowedValues": ["Basic", "Standard"],
+          "defaultValue": "Basic",
+          "metadata": {
+            "description": "Specifies the messaging tier for service Bus namespace."
+          }
+        },
+        "skuCapacity": {
+          "defaultValue": 1,
+          "type": "int",
+          "allowedValues": [
+            1,
+            2,
+            4
+          ],
+          "metadata": {
+            "description": "MessagingUnits for premium namespace"
+          }
+        },
         "eventhub_name": {
-            "defaultValue": "demogeneratoreh",
+            "defaultValue": "datageneratoreh",
             "type": "String"
         },
         "partitionCount": {
@@ -22,11 +42,15 @@
             "type": "int"
         },
         "consumer_group": {
-            "defaultValue": "democonsumergp",
+            "defaultValue": "datageneratorcg",
             "type": "String"
         },
         "capture_storageAccount_name": {
-            "defaultValue": "datageneratorstore",
+            "defaultValue": "datageneratorsa",
+            "type": "String"
+        },
+        "capture_blob_container": {
+            "defaultValue": "datageneratorcn",
             "type": "String"
         },
         "date": {
@@ -49,9 +73,9 @@
             "location": "[parameters('location')]",
             "tags": "[variables('tags')]",
             "sku": {
-                "name": "Standard",
-                "tier": "Standard",
-                "capacity": 1
+                "name": "[parameters('eventHubSku')]",
+                "tier": "[parameters('eventHubSku')]",
+                "capacity": "[parameters('skuCapacity')]"
             },
             "properties": {
                 "zoneRedundant": false,
@@ -105,11 +129,7 @@
                 "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]"
             ],
             "properties": {
-                "rights": [
-                    "Listen",
-                    "Manage",
-                    "Send"
-                ]
+                "rights": ["Listen", "Manage", "Send"]
             }
         },
         {
@@ -217,7 +237,7 @@
         {
             "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
             "apiVersion": "2019-06-01",
-            "name": "[concat(parameters('capture_storageAccount_name'), '/default/eventhub')]",
+            "name": "[concat(parameters('capture_storageAccount_name'), '/default/', parameters('capture_blob_container'))]",
             "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('capture_storageAccount_name'), 'default')]",
                 "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]"
@@ -226,5 +246,31 @@
                 "publicAccess": "Blob"
             }
         }
-    ]
-}
+    ],
+    "outputs": {
+      "eventhub_namespace": {
+        "type": "string",
+        "value": "[parameters('eventhub_namespace')]"
+      },
+      "eventhub_sas_key": {
+        "type": "string",
+        "value": "[listkeys(resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('eventhub_namespace'), 'RootManageSharedAccessKey'), '2017-04-01').primaryKey]"
+      },
+      "eventhub_name": {
+        "type": "string",
+        "value": "[parameters('eventhub_name')]"
+      },
+      "capture_StorageAccount_Key": {
+        "type": "string",
+        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('clientstorageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+      },
+      "capture_StorageAccount": {
+        "type": "string",
+        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+      },
+      "capture_blob_container": {
+        "type": "string",
+        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('capture_blob_container')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+      }
+    }
+  }
