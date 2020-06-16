@@ -1,28 +1,53 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "namespaces_datageneratoreh_name": {
+        "location": {
+          "defaultValue": "[resourceGroup().location]",
+          "type": "string",
+          "metadata": {
+            "description": "Location for all resources."
+          }
+        },
+        "eventhub_namespace": {
             "defaultValue": "datageneratoreh",
             "type": "String"
         },
-        "storageAccounts_datageneratorstore_name": {
+        "eventhub_name": {
+            "defaultValue": "demogeneratoreh",
+            "type": "String"
+        },
+        "partitionCount": {
+            "defaultValue": 2,
+            "type": "int"
+        },
+        "consumer_group": {
+            "defaultValue": "democonsumergp",
+            "type": "String"
+        },
+        "capture_storageAccount_name": {
             "defaultValue": "datageneratorstore",
             "type": "String"
+        },
+        "date": {
+          "defaultValue": "[utcNow('dd-MM-yyyy')]",
+          "type": "string"
         }
     },
-    "variables": {},
+    "variables": {
+        "tags": {
+            "Owner": "Abhishek Modi",
+            "Purpose": "Stream Data Generator",
+            "Expires": "[parameters('date')]"
+        }
+    },
     "resources": [
         {
             "type": "Microsoft.EventHub/namespaces",
             "apiVersion": "2018-01-01-preview",
-            "name": "[parameters('namespaces_datageneratoreh_name')]",
-            "location": "East US 2",
-            "tags": {
-                "Owner": "Abhishek Modi",
-                "Purpose": "Stream Data Generator",
-                "Expires": "16-june-2020"
-            },
+            "name": "[parameters('eventhub_namespace')]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
             "sku": {
                 "name": "Standard",
                 "tier": "Standard",
@@ -38,13 +63,9 @@
         {
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2019-06-01",
-            "name": "[parameters('storageAccounts_datageneratorstore_name')]",
-            "location": "eastus2",
-            "tags": {
-                "Owner": "Abhishek Modi",
-                "Purpose": "Stream Data Generator",
-                "Expiry": "16-june-2020"
-            },
+            "name": "[parameters('capture_storageAccount_name')]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tags')]",
             "sku": {
                 "name": "Standard_LRS",
                 "tier": "Standard"
@@ -78,10 +99,10 @@
         {
             "type": "Microsoft.EventHub/namespaces/AuthorizationRules",
             "apiVersion": "2017-04-01",
-            "name": "[concat(parameters('namespaces_datageneratoreh_name'), '/RootManageSharedAccessKey')]",
-            "location": "East US 2",
+            "name": "[concat(parameters('eventhub_namespace'), '/RootManageSharedAccessKey')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.EventHub/namespaces', parameters('namespaces_datageneratoreh_name'))]"
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]"
             ],
             "properties": {
                 "rights": [
@@ -94,10 +115,10 @@
         {
             "type": "Microsoft.EventHub/namespaces/networkRuleSets",
             "apiVersion": "2018-01-01-preview",
-            "name": "[concat(parameters('namespaces_datageneratoreh_name'), '/default')]",
-            "location": "East US 2",
+            "name": "[concat(parameters('eventhub_namespace'), '/default')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.EventHub/namespaces', parameters('namespaces_datageneratoreh_name'))]"
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]"
             ],
             "properties": {
                 "defaultAction": "Deny",
@@ -108,9 +129,9 @@
         {
             "type": "Microsoft.Storage/storageAccounts/blobServices",
             "apiVersion": "2019-06-01",
-            "name": "[concat(parameters('storageAccounts_datageneratorstore_name'), '/default')]",
+            "name": "[concat(parameters('capture_storageAccount_name'), '/default')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_datageneratorstore_name'))]"
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]"
             ],
             "sku": {
                 "name": "Standard_LRS",
@@ -128,9 +149,9 @@
         {
             "type": "Microsoft.Storage/storageAccounts/fileServices",
             "apiVersion": "2019-06-01",
-            "name": "[concat(parameters('storageAccounts_datageneratorstore_name'), '/default')]",
+            "name": "[concat(parameters('capture_storageAccount_name'), '/default')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_datageneratorstore_name'))]"
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]"
             ],
             "sku": {
                 "name": "Standard_LRS",
@@ -145,15 +166,15 @@
         {
             "type": "Microsoft.EventHub/namespaces/eventhubs",
             "apiVersion": "2017-04-01",
-            "name": "[concat(parameters('namespaces_datageneratoreh_name'), '/demogeneratoreh')]",
-            "location": "East US 2",
+            "name": "[concat(parameters('eventhub_namespace'), '/',parameters('eventhub_name'))]",
+            "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.EventHub/namespaces', parameters('namespaces_datageneratoreh_name'))]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_datageneratorstore_name'))]"
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]"
             ],
             "properties": {
                 "messageRetentionInDays": 1,
-                "partitionCount": 2,
+                "partitionCount": "[parameters('partitionCount')]",
                 "status": "Active",
                 "captureDescription": {
                     "enabled": true,
@@ -161,7 +182,7 @@
                     "destination": {
                         "name": "EventHubArchive.AzureBlockBlob",
                         "properties": {
-                            "storageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_datageneratorstore_name'))]",
+                            "storageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]",
                             "blobContainer": "eventhub",
                             "archiveNameFormat": "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}"
                         }
@@ -174,32 +195,32 @@
         {
             "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
             "apiVersion": "2017-04-01",
-            "name": "[concat(parameters('namespaces_datageneratoreh_name'), '/demogeneratoreh/$Default')]",
-            "location": "East US 2",
+            "name": "[concat(parameters('eventhub_namespace'), '/',parameters('eventhub_name'),'/$Default')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('namespaces_datageneratoreh_name'), 'demogeneratoreh')]",
-                "[resourceId('Microsoft.EventHub/namespaces', parameters('namespaces_datageneratoreh_name'))]"
+                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('eventhub_namespace'), parameters('eventhub_name'))]",
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]"
             ],
             "properties": {}
         },
         {
             "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
             "apiVersion": "2017-04-01",
-            "name": "[concat(parameters('namespaces_datageneratoreh_name'), '/demogeneratoreh/democonsumergp')]",
-            "location": "East US 2",
+            "name": "[concat(parameters('eventhub_namespace'), '/',parameters('eventhub_name'),'/',parameters('consumer_group'))]",
+            "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('namespaces_datageneratoreh_name'), 'demogeneratoreh')]",
-                "[resourceId('Microsoft.EventHub/namespaces', parameters('namespaces_datageneratoreh_name'))]"
+                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('eventhub_namespace'), parameters('eventhub_name'))]",
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhub_namespace'))]"
             ],
             "properties": {}
         },
         {
             "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
             "apiVersion": "2019-06-01",
-            "name": "[concat(parameters('storageAccounts_datageneratorstore_name'), '/default/eventhub')]",
+            "name": "[concat(parameters('capture_storageAccount_name'), '/default/eventhub')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_datageneratorstore_name'), 'default')]",
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_datageneratorstore_name'))]"
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('capture_storageAccount_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('capture_storageAccount_name'))]"
             ],
             "properties": {
                 "publicAccess": "Blob"
