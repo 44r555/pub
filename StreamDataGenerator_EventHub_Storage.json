@@ -66,6 +66,13 @@
       "defaultValue": "[concat('datageneratorbc',parameters('suffix'))]",
       "type": "String"
     },
+    "capture_timeout": {
+      "defaultValue": 120,
+      "metadata": {
+        "description": "Capture Interval in Sec"
+      },
+      "type": "int"
+    },
     "date": {
       "defaultValue": "[utcNow('dd-MM-yyyy')]",
       "type": "string"
@@ -167,8 +174,8 @@
               "archiveNameFormat": "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}"
             }
           },
-          "intervalInSeconds": 300,
-          "sizeLimitInBytes": 314572800
+          "intervalInSeconds": "[parameters('capture_timeout')]",
+          "sizeLimitInBytes": 10485760
         }
       }
     },
